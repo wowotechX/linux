@@ -174,4 +174,9 @@ config ARCH_ZYNQMP
 	help
 	  This enables support for Xilinx ZynqMP Family
 
+config ARCH_OWL
+	bool "Actions OWL 64-bit SoC Family"
+	help
+	  This enables support for Actions OWL based SoCs like the S900.
+
 endmenu

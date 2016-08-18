@@ -1,0 +1,13 @@
+/*
+ * dts file for Bubblegum-96 Development Board
+ *
+ * Copyright (C) 2016, wowotech.
+ *
+ */
+
+/dts-v1/;
+
+/ {
+	model = "Bubblegum-96 Development Board";
+	compatible = "actions,s900-bubblegum", "actions,s900";
+};

@@ -325,6 +325,7 @@ CONFIG_FREEZER=y
 # CONFIG_ARCH_VULCAN is not set
 # CONFIG_ARCH_XGENE is not set
 # CONFIG_ARCH_ZYNQMP is not set
+CONFIG_ARCH_OWL=y
 
 #
 # Bus support

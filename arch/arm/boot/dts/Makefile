@@ -585,7 +585,8 @@ dtb-$(CONFIG_ARCH_S5PV210) += \
 	s5pv210-goni.dtb \
 	s5pv210-smdkc110.dtb \
 	s5pv210-smdkv210.dtb \
-	s5pv210-torbreck.dtb
+	s5pv210-torbreck.dtb \
+	s5pv210-tiny210.dtb
 dtb-$(CONFIG_ARCH_SHMOBILE_MULTI) += \
 	emev2-kzm9d.dtb \
 	r7s72100-genmai.dtb \

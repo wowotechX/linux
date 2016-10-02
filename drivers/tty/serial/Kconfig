@@ -1624,6 +1624,14 @@ config SERIAL_MVEBU_CONSOLE
 	  and warnings and which allows logins in single user mode)
 	  Otherwise, say 'N'.
 
+config SERIAL_OWL
+	tristate "Actions OWL serial port support"
+	depends on ARCH_OWL
+	select SERIAL_CORE
+	select SERIAL_CORE_CONSOLE
+	help
+	  If you have a machine based on an Actions OWL CPU you
+	  can enable its onboard serial ports by enabling this option.
 endmenu
 
 config SERIAL_MCTRL_GPIO

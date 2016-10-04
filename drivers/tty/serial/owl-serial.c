@@ -38,8 +38,9 @@ static void __iomem		*uart5_base;
 /* TODO, FIXME!!! */
 static void owl_serial_putc(struct uart_port *port, int ch)
 {
-	if (readl(uart5_base + UART_STAT) & UART_STAT_TFFU)
-		return;
+	/* wait for TX FIFO untill it is not full */
+	while (readl(uart5_base + UART_STAT) & UART_STAT_TFFU)
+		;
 
 	writel(ch, uart5_base + UART_TXDAT);
 }

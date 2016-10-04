@@ -1629,6 +1629,7 @@ config SERIAL_OWL
 	depends on ARCH_OWL
 	select SERIAL_CORE
 	select SERIAL_CORE_CONSOLE
+	select SERIAL_EARLYCON
 	help
 	  If you have a machine based on an Actions OWL CPU you
 	  can enable its onboard serial ports by enabling this option.

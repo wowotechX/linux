@@ -4,10 +4,32 @@
  * Copyright (C) 2016, wowotech.
  *
  */
-
 /dts-v1/;
+
+#include <dt-bindings/interrupt-controller/arm-gic.h>
 
 / {
 	model = "Bubblegum-96 Development Board";
 	compatible = "actions,s900-bubblegum", "actions,s900";
+
+	#address-cells = <2>;
+	#size-cells = <2>;
+
+	gic: interrupt-controller@e00f1000 {
+		compatible = "arm,gic-400";
+		#interrupt-cells = <3>;
+		#address-cells = <0>;
+		interrupt-controller;
+		reg = <0 0xe00f1000 0 0x1000>,	/* dist_base */
+		      <0 0xe00f2000 0 0x1000>;	/* cpu_base */
+	};
+
+	timer {
+		compatible = "arm,armv8-timer";
+		interrupts = <GIC_PPI 13 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_LOW)>,
+			     <GIC_PPI 14 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_LOW)>,
+			     <GIC_PPI 11 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_LOW)>,
+			     <GIC_PPI 10 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_LOW)>;
+		clock-frequency = <24000000>;
+	};
 };

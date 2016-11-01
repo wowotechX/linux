@@ -320,7 +320,7 @@ CONFIG_FORCE_MAX_ZONEORDER=11
 #
 # Boot options
 #
-CONFIG_CMDLINE="earlycon=owl_serial"
+CONFIG_CMDLINE="earlycon=owl_serial loglevel=8"
 CONFIG_CMDLINE_FORCE=y
 # CONFIG_EFI is not set
 

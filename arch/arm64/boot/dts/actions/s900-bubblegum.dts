@@ -12,6 +12,8 @@
 	model = "Bubblegum-96 Development Board";
 	compatible = "actions,s900-bubblegum", "actions,s900";
 
+	interrupt-parent = <&gic>;
+
 	#address-cells = <2>;
 	#size-cells = <2>;
 

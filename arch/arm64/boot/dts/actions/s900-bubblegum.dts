@@ -34,4 +34,8 @@
 			     <GIC_PPI 10 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_LOW)>;
 		clock-frequency = <24000000>;
 	};
+
+	serial5: serial@e012a000 {
+		compatible = "actions,s900-serial";
+	};
 };

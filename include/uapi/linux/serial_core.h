@@ -264,4 +264,7 @@
 /* MVEBU UART */
 #define PORT_MVEBU	114
 
+/* OWL UART */
+#define PORT_OWL	115
+
 #endif /* _UAPILINUX_SERIAL_CORE_H */

@@ -68,6 +68,113 @@ EARLYCON_DECLARE(owl_serial, earlycon_owl_setup);
 /*============================================================================
  *				new serial driver
  *==========================================================================*/
+#define OWL_SERIAL_MAXIMUM		5
+
+struct owl_uart_port {
+	struct uart_port		port;
+
+	/* others, TODO */
+};
+
+/*============================================================================
+ *				UART operations
+ *==========================================================================*/
+static int owl_serial_startup(struct uart_port *port)
+{
+	int ret = 0;
+
+	dev_dbg(port->dev, "%s\n", __func__);
+
+	return ret;
+}
+
+static void owl_serial_shutdown(struct uart_port *port)
+{
+	dev_dbg(port->dev, "%s\n", __func__);
+}
+
+static void owl_serial_start_tx(struct uart_port *port)
+{
+	dev_dbg(port->dev, "%s\n", __func__);
+}
+
+static void owl_serial_stop_tx(struct uart_port *port)
+{
+	dev_dbg(port->dev, "%s\n", __func__);
+}
+
+static void owl_serial_stop_rx(struct uart_port *port)
+{
+	dev_dbg(port->dev, "%s\n", __func__);
+}
+
+static unsigned int owl_serial_tx_empty(struct uart_port *port)
+{
+	dev_dbg(port->dev, "%s\n", __func__);
+
+	return 0;
+}
+
+static void owl_serial_set_mctrl(struct uart_port *port, unsigned int mctrl)
+{
+	dev_dbg(port->dev, "%s\n", __func__);
+}
+
+static void owl_serial_set_termios(struct uart_port *port, struct ktermios *new,
+				   struct ktermios *old)
+{
+	dev_dbg(port->dev, "%s\n", __func__);
+}
+
+static struct uart_ops owl_uart_ops = {
+	.startup = owl_serial_startup,
+	.shutdown = owl_serial_shutdown,
+	.start_tx = owl_serial_start_tx,
+	.stop_tx = owl_serial_stop_tx,
+	.stop_rx = owl_serial_stop_rx,
+	.tx_empty = owl_serial_tx_empty,
+	.set_mctrl = owl_serial_set_mctrl,
+	.set_termios = owl_serial_set_termios,
+ };
+
+/*============================================================================
+ *				uart driver
+ *==========================================================================*/
+static struct console owl_console;
+
+static struct uart_driver owl_serial_driver = {
+	.owner		= THIS_MODULE,
+	.driver_name	= "owl_serial",
+	.dev_name	= "ttyS",
+	.cons		= &owl_console,
+	.nr		= OWL_SERIAL_MAXIMUM,
+};
+
+/*============================================================================
+ *				console driver
+ *==========================================================================*/
+static void owl_console_write(struct console *con, const char *s, unsigned n)
+{
+}
+
+static int __init owl_console_setup(struct console *con, char *options)
+{
+	return 0;
+}
+
+static struct console owl_console = {
+	.name	= "ttyS",
+	.write	= owl_console_write,
+	.device	= uart_console_device,
+	.setup	= owl_console_setup,
+	.flags	= CON_PRINTBUFFER,
+	.index	= -1,
+	.data	= &owl_serial_driver,
+};
+
+/*============================================================================
+ *				platform driver
+ *==========================================================================*/
 static const struct of_device_id owl_serial_of_match[] = {
 	{
 		.compatible = "actions,s900-serial",
@@ -81,6 +188,9 @@ static int owl_serial_probe(struct platform_device *pdev)
 {
 	int ret = 0;
 
+	struct owl_uart_port *oup;
+	struct uart_port *port;
+
 	const struct of_device_id *match;
 
 	dev_info(&pdev->dev, "%s\n", __func__);
@@ -91,12 +201,37 @@ static int owl_serial_probe(struct platform_device *pdev)
 		return -ENODEV;
 	}
 
+	oup = devm_kzalloc(&pdev->dev, sizeof(*oup), GFP_KERNEL);
+	if (oup == NULL) {
+		dev_err(&pdev->dev, "Failed to allocate memory for oup\n");
+		return -ENOMEM;
+	}
+	platform_set_drvdata(pdev, oup);
+	port = &oup->port;
+
+	port->dev = &pdev->dev;
+	port->type = PORT_OWL;
+	port->ops = &owl_uart_ops;
+
+	/* others, TODO */
+
+	ret = uart_add_one_port(&owl_serial_driver, port);
+	if (ret < 0) {
+		dev_err(&pdev->dev, "Failed to add uart port, err %d\n", ret);
+		return ret;
+	}
+
 	return ret;
 }
 
 static int owl_serial_remove(struct platform_device *pdev)
 {
+	struct owl_uart_port *oup = platform_get_drvdata(pdev);
+	struct uart_port *port = &oup->port;
+
 	dev_info(&pdev->dev, "%s\n", __func__);
+
+	uart_remove_one_port(&owl_serial_driver, port);
 
 	return 0;
 }
@@ -116,11 +251,21 @@ static int __init owl_serial_init(void)
 
 	pr_info("%s\n", __func__);
 
+	ret = uart_register_driver(&owl_serial_driver);
+	if (ret < 0) {
+		pr_err("register %s uart driver failed\n",
+		       owl_serial_driver.driver_name);
+		return ret;
+	}
+
 	ret = platform_driver_register(&owl_serial_platform_driver);
 	if (ret < 0) {
 		pr_err("owl_serial_platform_driver register failed, ret = %d\n", ret);
+		uart_unregister_driver(&owl_serial_driver);
+
 		return ret;
 	}
+
 	return 0;
 }
 
@@ -129,6 +274,7 @@ static void __exit owl_serial_exit(void)
 	pr_info("%s\n", __func__);
 
 	platform_driver_unregister(&owl_serial_platform_driver);
+	uart_unregister_driver(&owl_serial_driver);
 }
 
 module_init(owl_serial_init);

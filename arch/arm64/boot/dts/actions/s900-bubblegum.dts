@@ -17,6 +17,10 @@
 	#address-cells = <2>;
 	#size-cells = <2>;
 
+	aliases {
+		serial5 = &serial5;
+	};
+
 	gic: interrupt-controller@e00f1000 {
 		compatible = "arm,gic-400";
 		#interrupt-cells = <3>;
@@ -37,5 +41,6 @@
 
 	serial5: serial@e012a000 {
 		compatible = "actions,s900-serial";
+		reg = <0 0xe012a000 0 0x2000>;	/* UART5_BASE */
 	};
 };

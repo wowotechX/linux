@@ -68,7 +68,7 @@ EARLYCON_DECLARE(owl_serial, earlycon_owl_setup);
 /*============================================================================
  *				new serial driver
  *==========================================================================*/
-#define OWL_SERIAL_MAXIMUM		5
+#define OWL_SERIAL_MAXIMUM		6
 
 struct owl_uart_port {
 	struct uart_port		port;
@@ -79,6 +79,17 @@ struct owl_uart_port {
 /*============================================================================
  *				UART operations
  *==========================================================================*/
+#define __PORT_SET_BIT(port, reg, bit)			\
+	writel(readl((port)->membase + (reg)) | (bit),	\
+	       (port)->membase + (reg))
+
+#define __PORT_CLEAR_BIT(port, reg, bit)		\
+	writel(readl((port)->membase + (reg)) & ~(bit),	\
+	       (port)->membase + (reg))
+
+#define __PORT_TEST_BIT(port, reg, bit)			\
+	(!!(readl((port)->membase + (reg)) & (bit)))
+
 static int owl_serial_startup(struct uart_port *port)
 {
 	int ret = 0;
@@ -153,8 +164,21 @@ static struct uart_driver owl_serial_driver = {
 /*============================================================================
  *				console driver
  *==========================================================================*/
+static void owl_console_putchar(struct uart_port *port, int ch)
+{
+	/* wait for TX FIFO untill it is not full */
+	while (__PORT_TEST_BIT(port, UART_STAT, UART_STAT_TFFU))
+		;
+
+	writel(ch, port->membase + UART_TXDAT);
+}
+
 static void owl_console_write(struct console *con, const char *s, unsigned n)
 {
+	struct uart_driver *driver = con->data;
+	struct uart_port *port = driver->state[con->index].uart_port;
+
+	uart_console_write(port, s, n, owl_console_putchar);
 }
 
 static int __init owl_console_setup(struct console *con, char *options)
@@ -168,7 +192,7 @@ static struct console owl_console = {
 	.device	= uart_console_device,
 	.setup	= owl_console_setup,
 	.flags	= CON_PRINTBUFFER,
-	.index	= -1,
+	.index	= 5,
 	.data	= &owl_serial_driver,
 };
 
@@ -193,6 +217,8 @@ static int owl_serial_probe(struct platform_device *pdev)
 
 	const struct of_device_id *match;
 
+	struct resource *resource;
+
 	dev_info(&pdev->dev, "%s\n", __func__);
 
 	match = of_match_device(owl_serial_of_match, &pdev->dev);
@@ -212,6 +238,27 @@ static int owl_serial_probe(struct platform_device *pdev)
 	port->dev = &pdev->dev;
 	port->type = PORT_OWL;
 	port->ops = &owl_uart_ops;
+
+	resource = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+	if (!resource) {
+		dev_err(&pdev->dev, "No IO memory resource\n");
+		return -ENODEV;
+	}
+	port->mapbase = resource->start;
+
+	port->membase = devm_ioremap_resource(&pdev->dev, resource);
+	if (IS_ERR(port->membase)) {
+		dev_err(&pdev->dev, "Failed to map memory resource\n");
+		return PTR_ERR(port->membase);
+	}
+	port->iotype = UPIO_MEM32;
+
+	port->line = of_alias_get_id(pdev->dev.of_node, "serial");
+	if (port->line < 0) {
+		dev_err(&pdev->dev, "failed to get alias id, errno %d\n",
+			port->line);
+		return port->line;
+	}
 
 	/* others, TODO */
 

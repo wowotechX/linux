@@ -42,5 +42,6 @@
 	serial5: serial@e012a000 {
 		compatible = "actions,s900-serial";
 		reg = <0 0xe012a000 0 0x2000>;	/* UART5_BASE */
+		interrupts = <GIC_SPI 34 IRQ_TYPE_LEVEL_HIGH>;
 	};
 };

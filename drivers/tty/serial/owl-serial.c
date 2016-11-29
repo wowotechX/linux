@@ -22,14 +22,26 @@
 #include <linux/of_device.h>
 #include <linux/serial_core.h>
 #include <linux/console.h>
+#include <linux/tty_flip.h>
 #include <asm/io.h>
 
 #define UART5_BASE		(0xE012a000)
 
-#define	UART_STAT		(0xc)
+#define UART_CTL		(0x0)
+#define UART_RXDAT		(0x4)
 #define	UART_TXDAT		(0x8)
+#define	UART_STAT		(0xc)
 
-#define	UART_STAT_TFFU		(0x1 <<	6)	/* TX FIFO full	Status */
+#define UART_CTL_TXIE		(0x1 << 19)	/* UART TX IRQ Enable. */
+#define UART_CTL_RXIE		(0x1 << 18)	/* UART RX IRQ Enable. */
+#define UART_CTL_EN		(0x1 << 15)	/* UART Enable. */
+
+#define UART_STAT_TFES		(0x1 << 10)	/* TX FIFO empty */
+#define UART_STAT_RFFS		(0x1 << 9)	/* RX FIFO full */
+#define UART_STAT_TFFU		(0x1 << 6)	/* TX FIFO full */
+#define UART_STAT_RFEM		(0x1 << 5)	/* RX FIFO Empty */
+#define UART_STAT_TIP		(0x1 << 1)	/* TX IRQ Pending */
+#define UART_STAT_RIP		(0x1 << 0)	/* RX IRQ Pending */
 
 /*============================================================================
  *			old earlycon, will be removed later
@@ -75,6 +87,7 @@ struct owl_uart_port {
 
 	/* others, TODO */
 };
+#define PORT_TO_OUP(port)		container_of(port, struct owl_uart_port, port)
 
 /*============================================================================
  *				UART operations
@@ -90,11 +103,67 @@ struct owl_uart_port {
 #define __PORT_TEST_BIT(port, reg, bit)			\
 	(!!(readl((port)->membase + (reg)) & (bit)))
 
+static void __write_tx_fifo(struct uart_port *port)
+{
+	struct circ_buf *xmit = &port->state->xmit;
+
+	dev_dbg(port->dev, "%s\n", __func__);
+
+	/* write TX FIFO while: TX FIFO not full and TX buffer no empty */
+	while (!__PORT_TEST_BIT(port, UART_STAT, UART_STAT_TFFU) &&
+	       !uart_circ_empty(xmit)) {
+		writel(xmit->buf[xmit->tail], port->membase + UART_TXDAT);
+		xmit->tail = (xmit->tail + 1) & (UART_XMIT_SIZE - 1);
+		port->icount.tx++;
+	}
+}
+
+static irqreturn_t owl_serial_irq_handle(int irq, void *data)
+{
+	unsigned char ch;
+
+	struct uart_port *port = data;
+
+	if (__PORT_TEST_BIT(port, UART_STAT, UART_STAT_TIP)) {
+		/* clear pending bit */
+		__PORT_SET_BIT(port, UART_STAT, UART_STAT_TIP);
+
+		/* try to transmit */
+		__write_tx_fifo(port);
+	} else if (__PORT_TEST_BIT(port, UART_STAT, UART_STAT_RIP)) {
+		/* clear pending bit */
+		__PORT_SET_BIT(port, UART_STAT, UART_STAT_RIP);
+
+		while (!__PORT_TEST_BIT(port, UART_STAT, UART_STAT_RFEM)) {
+			ch = (unsigned char)readl(port->membase + UART_RXDAT);
+
+			/* flag, TODO */
+			tty_insert_flip_char(&port->state->port, ch, TTY_NORMAL);
+		}
+	}
+
+	return IRQ_HANDLED;
+}
+
 static int owl_serial_startup(struct uart_port *port)
 {
 	int ret = 0;
 
 	dev_dbg(port->dev, "%s\n", __func__);
+
+	ret = devm_request_irq(port->dev, port->irq, owl_serial_irq_handle,
+			       0, "owl_serial", port);
+	if (ret < 0) {
+		dev_err(port->dev, "request irq(%d) failed(%d)\n",
+			port->irq, ret);
+		return ret;
+	}
+
+	/* RX irq enable */
+	__PORT_SET_BIT(port, UART_CTL, UART_CTL_RXIE);
+
+	/* enable serial port */
+	__PORT_SET_BIT(port, UART_CTL, UART_CTL_EN);
 
 	return ret;
 }
@@ -102,28 +171,66 @@ static int owl_serial_startup(struct uart_port *port)
 static void owl_serial_shutdown(struct uart_port *port)
 {
 	dev_dbg(port->dev, "%s\n", __func__);
+
+	/* disable serial port */
+	__PORT_CLEAR_BIT(port, UART_CTL, UART_CTL_EN);
+
+	/* RX irq disable */
+	__PORT_CLEAR_BIT(port, UART_CTL, UART_CTL_RXIE);
+
+	devm_free_irq(port->dev, port->irq, port);
 }
 
 static void owl_serial_start_tx(struct uart_port *port)
 {
 	dev_dbg(port->dev, "%s\n", __func__);
+
+	/* TX irq enable */
+	__PORT_SET_BIT(port, UART_CTL, UART_CTL_TXIE);
+
+	/* try to transmit */
+	__write_tx_fifo(port);
 }
 
 static void owl_serial_stop_tx(struct uart_port *port)
 {
 	dev_dbg(port->dev, "%s\n", __func__);
+
+	/* TX irq disable */
+	__PORT_CLEAR_BIT(port, UART_CTL, UART_CTL_TXIE);
+
+	/* wait TX complete */
+	while (!__PORT_TEST_BIT(port, UART_STAT, UART_STAT_TFES));
+
+	/* clear pending bit */
+	__PORT_SET_BIT(port, UART_STAT, UART_STAT_TIP);
 }
 
 static void owl_serial_stop_rx(struct uart_port *port)
 {
+	unsigned char ch;
+
 	dev_dbg(port->dev, "%s\n", __func__);
+
+	/* RX irq disable */
+	__PORT_CLEAR_BIT(port, UART_CTL, UART_CTL_RXIE);
+
+	/* reset RX FIFO */
+	while (!__PORT_TEST_BIT(port, UART_STAT, UART_STAT_RFEM))
+		ch = (unsigned char)readl(port->membase + UART_RXDAT);
+
+	/* clear pending bit */
+	__PORT_SET_BIT(port, UART_STAT, UART_STAT_RIP);
 }
 
 static unsigned int owl_serial_tx_empty(struct uart_port *port)
 {
 	dev_dbg(port->dev, "%s\n", __func__);
 
-	return 0;
+	if (__PORT_TEST_BIT(port, UART_STAT, UART_STAT_TFES))
+		return TIOCSER_TEMT;
+	else
+		return 0;
 }
 
 static void owl_serial_set_mctrl(struct uart_port *port, unsigned int mctrl)
@@ -175,10 +282,22 @@ static void owl_console_putchar(struct uart_port *port, int ch)
 
 static void owl_console_write(struct console *con, const char *s, unsigned n)
 {
+	bool tx_irq_enabled;
+
 	struct uart_driver *driver = con->data;
 	struct uart_port *port = driver->state[con->index].uart_port;
 
+	/* save TX IRQ status */
+	tx_irq_enabled = __PORT_TEST_BIT(port, UART_CTL, UART_CTL_TXIE);
+
+	/* TX irq disable */
+	__PORT_CLEAR_BIT(port, UART_CTL, UART_CTL_TXIE);
+
 	uart_console_write(port, s, n, owl_console_putchar);
+
+	/* restore TX IRQ status */
+	if (tx_irq_enabled)
+		__PORT_SET_BIT(port, UART_CTL, UART_CTL_TXIE);
 }
 
 static int __init owl_console_setup(struct console *con, char *options)
@@ -252,6 +371,12 @@ static int owl_serial_probe(struct platform_device *pdev)
 		return PTR_ERR(port->membase);
 	}
 	port->iotype = UPIO_MEM32;
+
+	port->irq = platform_get_irq(pdev, 0);
+	if (port->irq < 0) {
+		dev_err(&pdev->dev, "Failed to get irq\n");
+		return port->irq;
+	}
 
 	port->line = of_alias_get_id(pdev->dev.of_node, "serial");
 	if (port->line < 0) {

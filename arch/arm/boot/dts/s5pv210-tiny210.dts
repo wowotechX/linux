@@ -27,7 +27,7 @@
 	compatible = "yic,smdkv210", "samsung,s5pv210";
 
 	chosen {
-		bootargs = "console=ttySAC0,115200n8 root=/dev/ram rw rootwait ignore_loglevel earlyprintk";
+		bootargs = "console=ttySAC0,115200n8 root=/dev/ram rw rootwait ignore_loglevel earlycon rdinit=/linuxrc";
 	};
 
 	memory {

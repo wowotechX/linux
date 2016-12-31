@@ -327,8 +327,8 @@ CONFIG_FORCE_MAX_ZONEORDER=11
 #
 # Boot options
 #
-CONFIG_CMDLINE="earlycon=owl_serial console=ttyS5 loglevel=8 root=/dev/ram0 init=/sbin/init"
-CONFIG_CMDLINE_FORCE=y
+CONFIG_CMDLINE=""
+# CONFIG_CMDLINE_FORCE is not set
 # CONFIG_EFI is not set
 
 #

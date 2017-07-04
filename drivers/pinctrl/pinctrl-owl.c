@@ -20,11 +20,26 @@
 #include <linux/platform_device.h>
 
 /*============================================================================
+ *			      pinctrl_desc for s900 soc
+ *==========================================================================*/
+static const struct pinctrl_pin_desc s900_pins[] = {
+	PINCTRL_PIN(0, "A8"),	/* TODO */
+};
+
+static const struct pinctrl_desc s900_desc = {
+	.name = "s900",
+	.pins = s900_pins,
+	.npins = ARRAY_SIZE(s900_pins),
+	.owner = THIS_MODULE,
+};
+
+/*============================================================================
  *			       platform driver
  *==========================================================================*/
 static const struct of_device_id owl_pinctrl_of_match[] = {
 	{
 		.compatible = "actions,s900-pinctrl",
+		.data = &s900_desc,
 	},
 	{
 	},
@@ -33,6 +48,24 @@ MODULE_DEVICE_TABLE(of, owl_pinctrl_of_match);
 
 static int __init owl_pinctrl_probe(struct platform_device *pdev)
 {
+	struct device *dev = &pdev->dev;
+	struct pinctrl_dev *pctl;
+	const struct pinctrl_desc *desc;
+
+	dev_info(dev, "%s\n", __func__);
+
+	desc = of_device_get_match_data(dev);
+	if (desc == NULL) {
+		dev_err(dev, "device get match data failed\n");
+		return -ENODEV;
+	}
+
+	pctl = pinctrl_register(desc, dev, NULL);
+	if (!pctl) {
+		dev_err(dev, "could not register pinctrl desc\n");
+		return -EINVAL;
+	}
+
 	return 0;
 }
 
@@ -41,7 +74,7 @@ static void __exit owl_pinctrl_remove(struct platform_device *pdev)
 }
 
 static struct platform_driver owl_pinctrl_platform_driver = {
-	.probe	  = owl_pinctrl_probe,
+	.probe  = owl_pinctrl_probe,
 	.remove	 = owl_pinctrl_remove,
 	.driver	 = {
 		.name   = "owl_pinctrl",

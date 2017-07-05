@@ -19,17 +19,92 @@
 #include <linux/device.h>
 #include <linux/platform_device.h>
 
+struct owl_pinctrl_group {
+	const char *name;
+	const unsigned int *pins;
+	const unsigned num_pins;
+};
+
 /*============================================================================
  *			      pinctrl_desc for s900 soc
  *==========================================================================*/
+
+/*
+ * pins
+ */
 static const struct pinctrl_pin_desc s900_pins[] = {
-	PINCTRL_PIN(0, "A8"),	/* TODO */
+	PINCTRL_PIN(6, "A7"),
+	PINCTRL_PIN(15, "B6"),
+	PINCTRL_PIN(24, "C5"),
+	PINCTRL_PIN(37, "D8"),
+	PINCTRL_PIN(60, "G1"),
+	PINCTRL_PIN(61, "G2"),
 };
+/*
+ * pins end
+ */
+
+/*
+ * pin groups
+ */
+
+static const unsigned s900_uart5_0_pins[] = { 6, 37 };
+static const unsigned s900_uart5_1_pins[] = { 24, 15 };
+static const unsigned s900_uart5_2_pins[] = { 61, 60 };
+
+static const struct owl_pinctrl_group s900_groups[] = {
+	{
+		.name = "uart5_0_grp",
+		.pins = s900_uart5_0_pins,
+		.num_pins = ARRAY_SIZE(s900_uart5_0_pins),
+	},
+	{
+		.name = "uart5_1_grp",
+		.pins = s900_uart5_1_pins,
+		.num_pins = ARRAY_SIZE(s900_uart5_1_pins),
+	},
+	{
+		.name = "uart5_2_grp",
+		.pins = s900_uart5_2_pins,
+		.num_pins = ARRAY_SIZE(s900_uart5_2_pins),
+	},
+};
+
+static int s900_get_groups_count(struct pinctrl_dev *pctldev)
+{ 
+	return ARRAY_SIZE(s900_groups);
+}
+static const char *s900_get_group_name(struct pinctrl_dev *pctldev,
+				       unsigned selector)
+{
+	return s900_groups[selector].name;
+}
+
+static int s900_get_group_pins(struct pinctrl_dev *pctldev, unsigned selector,
+			       unsigned ** const pins, unsigned * const num_pins)
+{
+	*pins = (unsigned *)s900_groups[selector].pins;
+	*num_pins = s900_groups[selector].num_pins;
+
+	return 0;
+}
+
+static struct pinctrl_ops s900_pctrl_ops = {
+	.get_groups_count = s900_get_groups_count,
+	.get_group_name = s900_get_group_name,
+	.get_group_pins = s900_get_group_pins,
+};
+/*
+ * pin groups end
+ */
 
 static const struct pinctrl_desc s900_desc = {
 	.name = "s900",
 	.pins = s900_pins,
 	.npins = ARRAY_SIZE(s900_pins),
+
+	.pctlops = &s900_pctrl_ops,
+
 	.owner = THIS_MODULE,
 };
 

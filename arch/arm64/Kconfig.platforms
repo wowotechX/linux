@@ -176,6 +176,7 @@ config ARCH_ZYNQMP
 
 config ARCH_OWL
 	bool "Actions OWL 64-bit SoC Family"
+	select PINCTRL
 	help
 	  This enables support for Actions OWL based SoCs like the S900.
 

@@ -18,11 +18,14 @@
 #include <linux/init.h>
 #include <linux/device.h>
 #include <linux/platform_device.h>
+#include <linux/of_device.h>
+
+#include <linux/pinctrl/pinctrl.h>
 
 struct owl_pinctrl_group {
 	const char *name;
-	const unsigned int *pins;
-	const unsigned num_pins;
+	const unsigned *pins;
+	unsigned num_pins;
 };
 
 /*============================================================================
@@ -81,9 +84,9 @@ static const char *s900_get_group_name(struct pinctrl_dev *pctldev,
 }
 
 static int s900_get_group_pins(struct pinctrl_dev *pctldev, unsigned selector,
-			       unsigned ** const pins, unsigned * const num_pins)
+			       const unsigned **pins, unsigned *num_pins)
 {
-	*pins = (unsigned *)s900_groups[selector].pins;
+	*pins = s900_groups[selector].pins;
 	*num_pins = s900_groups[selector].num_pins;
 
 	return 0;
@@ -121,7 +124,7 @@ static const struct of_device_id owl_pinctrl_of_match[] = {
 };
 MODULE_DEVICE_TABLE(of, owl_pinctrl_of_match);
 
-static int __init owl_pinctrl_probe(struct platform_device *pdev)
+static int owl_pinctrl_probe(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
 	struct pinctrl_dev *pctl;
@@ -135,7 +138,7 @@ static int __init owl_pinctrl_probe(struct platform_device *pdev)
 		return -ENODEV;
 	}
 
-	pctl = pinctrl_register(desc, dev, NULL);
+	pctl = pinctrl_register((struct pinctrl_desc *)desc, dev, NULL);
 	if (!pctl) {
 		dev_err(dev, "could not register pinctrl desc\n");
 		return -EINVAL;
@@ -144,8 +147,9 @@ static int __init owl_pinctrl_probe(struct platform_device *pdev)
 	return 0;
 }
 
-static void __exit owl_pinctrl_remove(struct platform_device *pdev)
+static int owl_pinctrl_remove(struct platform_device *pdev)
 {
+	return 0;
 }
 
 static struct platform_driver owl_pinctrl_platform_driver = {

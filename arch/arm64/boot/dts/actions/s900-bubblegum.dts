@@ -39,9 +39,25 @@
 		clock-frequency = <24000000>;
 	};
 
+	pinctrl@0xe01b0000 {
+		compatible = "actions,s900-pinctrl";
+		reg = <0 0xe01b0000 0 0x550>;
+
+		uart5_state_default: uart5_default {
+			pinmux {
+				function = "uart5";
+				group = "uart5_0_grp";
+			};
+			/* others, TODO */
+		};
+	};
+
 	serial5: serial@e012a000 {
 		compatible = "actions,s900-serial";
 		reg = <0 0xe012a000 0 0x2000>;	/* UART5_BASE */
 		interrupts = <GIC_SPI 34 IRQ_TYPE_LEVEL_HIGH>;
+
+		pinctrl-names = "default";
+		pinctrl-0 = <&uart5_state_default>;
 	};
 };

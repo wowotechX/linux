@@ -19,6 +19,7 @@
 #include <linux/device.h>
 #include <linux/platform_device.h>
 #include <linux/of_device.h>
+#include <linux/slab.h>
 
 #include <asm/io.h>
 
@@ -159,10 +160,69 @@ static int s900_get_group_pins(struct pinctrl_dev *pctldev, unsigned selector,
 	return 0;
 }
 
+static int s900_dt_node_to_map(struct pinctrl_dev *pctldev,
+			       struct device_node *np_config,
+			       struct pinctrl_map **map,
+			       unsigned *num_maps)
+{
+	int ret, child_cnt;
+
+	const char *function;
+	const char *group;
+
+	struct device *dev = pctldev->dev;
+	struct device_node *np;
+
+	dev_dbg(dev, "%s\n", __func__);
+
+	*map = NULL;
+	*num_maps = 0;
+
+	child_cnt = of_get_child_count(np_config);
+	dev_dbg(dev, "child_cnt %d\n", child_cnt);
+
+	if (child_cnt == 0)
+		return 0;
+
+	*map = kzalloc(sizeof(struct pinctrl_map) * child_cnt, GFP_KERNEL);
+	if (*map == NULL) {
+		dev_dbg(dev, "malloc failed\n");
+		return -ENOMEM;
+	}
+
+	for_each_child_of_node(np_config, np) {
+		ret = of_property_read_string(np, "function", &function);
+		if (ret != 0)
+			continue;
+
+		ret = of_property_read_string(np, "group", &group);
+		if (ret != 0)
+			continue;
+
+		dev_dbg(dev, "got a pinmux entry: %s-%s\n", function, group);
+
+		(*map)[*num_maps].type = PIN_MAP_TYPE_MUX_GROUP;
+		(*map)[*num_maps].data.mux.function = function;
+		(*map)[*num_maps].data.mux.group = group;
+		(*num_maps)++;
+	}
+
+	return 0;
+}
+static void s900_dt_free_map(struct pinctrl_dev *pctldev,
+			     struct pinctrl_map *map, unsigned num_maps)
+{
+	/* others, TODO */
+
+	kfree(map);
+}
+
 static struct pinctrl_ops s900_pctrl_ops = {
 	.get_groups_count = s900_get_groups_count,
 	.get_group_name = s900_get_group_name,
 	.get_group_pins = s900_get_group_pins,
+	.dt_node_to_map = s900_dt_node_to_map,
+	.dt_free_map = s900_dt_free_map,
 };
 /*
  * pin groups end

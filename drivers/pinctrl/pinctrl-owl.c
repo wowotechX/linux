@@ -13,6 +13,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#define DEBUG
+
 #include <linux/mod_devicetable.h>
 #include <linux/module.h>
 #include <linux/init.h>
@@ -143,17 +145,23 @@ static const struct owl_pinctrl_group s900_groups[] = {
 
 static int s900_get_groups_count(struct pinctrl_dev *pctldev)
 { 
+	dev_dbg(pctldev->dev, "%s\n", __func__);
+
 	return ARRAY_SIZE(s900_groups);
 }
 static const char *s900_get_group_name(struct pinctrl_dev *pctldev,
 				       unsigned selector)
 {
+	dev_dbg(pctldev->dev, "%s, selector %d\n", __func__, selector);
+
 	return s900_groups[selector].name;
 }
 
 static int s900_get_group_pins(struct pinctrl_dev *pctldev, unsigned selector,
 			       const unsigned **pins, unsigned *num_pins)
 {
+	dev_dbg(pctldev->dev, "%s, selector %d\n", __func__, selector);
+
 	*pins = s900_groups[selector].pins;
 	*num_pins = s900_groups[selector].num_pins;
 
@@ -212,6 +220,8 @@ static int s900_dt_node_to_map(struct pinctrl_dev *pctldev,
 static void s900_dt_free_map(struct pinctrl_dev *pctldev,
 			     struct pinctrl_map *map, unsigned num_maps)
 {
+	dev_dbg(pctldev->dev, "%s\n", __func__);
+
 	/* others, TODO */
 
 	kfree(map);
@@ -245,18 +255,24 @@ static const struct owl_pmx_func s900_functions[] = {
 
 static int s900_get_functions_count(struct pinctrl_dev *pctldev)
 {
+	dev_dbg(pctldev->dev, "%s\n", __func__);
+
 	return ARRAY_SIZE(s900_functions);
 }
 
 static const char *s900_get_fname(struct pinctrl_dev *pctldev,
 				  unsigned selector)
 {
+	dev_dbg(pctldev->dev, "%s, selector %d\n", __func__, selector);
+
 	return s900_functions[selector].name;
 }
 
 static int s900_get_groups(struct pinctrl_dev *pctldev, unsigned selector,
 			   const char * const **groups, unsigned *num_groups)
 {
+	dev_dbg(pctldev->dev, "%s, selector %d\n", __func__, selector);
+
 	*groups = s900_functions[selector].groups;
 	*num_groups = s900_functions[selector].num_groups;
 
@@ -273,10 +289,16 @@ static int s900_set_mux(struct pinctrl_dev *pctldev, unsigned selector,
 
 	const struct owl_pmx_reginfo *reginfo;
 
+	dev_dbg(pctldev->dev, "%s, selector %d, group %d\n",
+		__func__, selector, group);
+
 	priv = (struct owl_pinctrl_priv *)pctldev->driver_data;
 	reginfo = s900_groups[group].reginfo;
 
 	for (i = 0; i < reginfo->num_entries; i++) {
+		dev_dbg(pctldev->dev, " offset %x, mask %x, val %x\n",
+			reginfo->offset[i], reginfo->mask[i], reginfo->val[i]);
+
 		val = readl(priv->membase + reginfo->offset[i]);
 		val &= ~reginfo->mask[i];
 		val |= reginfo->val[i];

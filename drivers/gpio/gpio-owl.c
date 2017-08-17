@@ -25,8 +25,104 @@
 
 #include <asm/io.h>
 
+#include <linux/gpio.h>
+#include <linux/pinctrl/consumer.h>
+
+#define GPIO_OUTEN		(0x0000)
+#define GPIO_INEN		(0x0004)
+#define GPIO_DAT		(0x0008)
+
 struct owl_gpio_priv {
-	void __iomem *membase;
+	void __iomem		*membase;
+};
+
+static inline void _gpiochip_set_bit(struct gpio_chip *chip,
+				     unsigned reg, unsigned bit)
+{
+	struct owl_gpio_priv *priv = gpiochip_get_data(chip);
+
+	writel(readl(priv->membase + reg) | (1 << bit),
+	       priv->membase + reg);
+}
+
+static inline void _gpiochip_clear_bit(struct gpio_chip *chip,
+				       unsigned reg, unsigned bit)
+{
+	struct owl_gpio_priv *priv = gpiochip_get_data(chip);
+
+	writel(readl(priv->membase + reg) & (~(1 << bit)),
+	       priv->membase + reg);
+}
+
+static inline int _gpiochip_get_bit(struct gpio_chip *chip,
+				    unsigned reg, unsigned bit)
+{
+	struct owl_gpio_priv *priv = gpiochip_get_data(chip);
+
+	return ((readl(priv->membase + reg) >> bit) & 0x1);
+}
+
+static int owl_gpio_request(struct gpio_chip *chip, unsigned offset)
+{
+	return pinctrl_request_gpio(offset);
+}
+
+static void owl_gpio_free(struct gpio_chip *chip, unsigned offset)
+{
+	_gpiochip_clear_bit(chip, GPIO_INEN, offset);
+	_gpiochip_clear_bit(chip, GPIO_OUTEN, offset);
+
+	return pinctrl_free_gpio(offset);
+}
+
+static int owl_gpio_direction_input(struct gpio_chip *chip, unsigned offset)
+{
+	_gpiochip_clear_bit(chip, GPIO_OUTEN, offset);
+	_gpiochip_set_bit(chip, GPIO_INEN, offset);
+
+	return 0;
+}
+
+static void owl_gpio_set(struct gpio_chip *chip, unsigned offset, int value);
+static int owl_gpio_direction_output(struct gpio_chip *chip, unsigned offset,
+					int value)
+{
+	_gpiochip_clear_bit(chip, GPIO_INEN, offset);
+
+	owl_gpio_set(chip, offset, value);
+	_gpiochip_set_bit(chip, GPIO_OUTEN, offset);
+
+	return 0;
+}
+
+static void owl_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
+{
+	dev_dbg(chip->parent, "offset %d, value %d\n", offset, value);
+
+	if (value == 0)
+		_gpiochip_clear_bit(chip, GPIO_DAT, offset);
+	else
+		_gpiochip_set_bit(chip, GPIO_DAT, offset);
+}
+
+static int owl_gpio_get(struct gpio_chip *chip, unsigned offset)
+{
+	dev_dbg(chip->parent, "offset %d, value %d\n",
+		offset, _gpiochip_get_bit(chip, GPIO_DAT, offset));
+
+	return _gpiochip_get_bit(chip, GPIO_DAT, offset);
+}
+
+static struct gpio_chip owl_gpio_chip = {
+	.label			= "owl-gpio",
+	.request		= owl_gpio_request,
+	.free			= owl_gpio_free,
+	.direction_input	= owl_gpio_direction_input,
+	.direction_output	= owl_gpio_direction_output,
+	.get			= owl_gpio_get,
+	.set			= owl_gpio_set,
+	.base			= 0,
+	.ngpio			= 32,
 };
 
 /*============================================================================
@@ -43,6 +139,8 @@ MODULE_DEVICE_TABLE(of, owl_gpio_of_match);
 
 static int owl_gpio_probe(struct platform_device *pdev)
 {
+	int ret;
+
 	struct device *dev = &pdev->dev;
 	struct resource *resource;
 
@@ -66,6 +164,12 @@ static int owl_gpio_probe(struct platform_device *pdev)
 	if (IS_ERR(priv->membase)) {
 		dev_err(dev, "Failed to map memory resource\n");
 		return PTR_ERR(priv->membase);
+	}
+
+	ret = devm_gpiochip_add_data(dev, &owl_gpio_chip, priv);
+	if (ret < 0) {
+		dev_err(dev, "Failed to add gpiochip\n");
+		return ret;
 	}
 
 	return 0;

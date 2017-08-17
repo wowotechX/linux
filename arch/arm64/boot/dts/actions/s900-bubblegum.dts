@@ -52,6 +52,31 @@
 		};
 	};
 
+	gpioa: gpio@0xe01b0000 {
+		compatible = "actions,s900-gpio";
+		reg = <0 0xe01b0000 0 12>;
+	};
+	gpiob: gpio@0xe01b000c {
+		compatible = "actions,s900-gpio";
+		reg = <0 0xe01b000c 0 12>;
+	};
+	gpioc: gpio@0xe01b0018 {
+		compatible = "actions,s900-gpio";
+		reg = <0 0xe01b0018 0 12>;
+	};
+	gpiod: gpio@0xe01b0024 {
+		compatible = "actions,s900-gpio";
+		reg = <0 0xe01b0024 0 12>;
+	};
+	gpioe: gpio@0xe01b0030 {
+		compatible = "actions,s900-gpio";
+		reg = <0 0xe01b0030 0 12>;
+	};
+	gpiof: gpio@0xe01b00f0 {
+		compatible = "actions,s900-gpio";
+		reg = <0 0xe01b00f0 0 12>;
+	};
+
 	serial5: serial@e012a000 {
 		compatible = "actions,s900-serial";
 		reg = <0 0xe012a000 0 0x2000>;	/* UART5_BASE */

@@ -160,7 +160,7 @@ static int owl_gpio_probe(struct platform_device *pdev)
 		return -ENODEV;
 	}
 
-	priv->membase = devm_ioremap_resource(dev, resource);
+	priv->membase = ioremap(resource->start, resource_size(resource));
 	if (IS_ERR(priv->membase)) {
 		dev_err(dev, "Failed to map memory resource\n");
 		return PTR_ERR(priv->membase);

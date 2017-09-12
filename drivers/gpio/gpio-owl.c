@@ -20,6 +20,7 @@
 #include <linux/init.h>
 #include <linux/device.h>
 #include <linux/platform_device.h>
+#include <linux/of.h>
 #include <linux/of_device.h>
 #include <linux/slab.h>
 
@@ -34,6 +35,8 @@
 
 struct owl_gpio_priv {
 	void __iomem		*membase;
+
+	struct gpio_chip	gpiochip;
 };
 
 static inline void _gpiochip_set_bit(struct gpio_chip *chip,
@@ -64,7 +67,8 @@ static inline int _gpiochip_get_bit(struct gpio_chip *chip,
 
 static int owl_gpio_request(struct gpio_chip *chip, unsigned offset)
 {
-	return pinctrl_request_gpio(offset);
+	//return pinctrl_request_gpio(offset);
+	return 0;
 }
 
 static void owl_gpio_free(struct gpio_chip *chip, unsigned offset)
@@ -72,7 +76,8 @@ static void owl_gpio_free(struct gpio_chip *chip, unsigned offset)
 	_gpiochip_clear_bit(chip, GPIO_INEN, offset);
 	_gpiochip_clear_bit(chip, GPIO_OUTEN, offset);
 
-	return pinctrl_free_gpio(offset);
+	//return pinctrl_free_gpio(offset);
+	return 0;
 }
 
 static int owl_gpio_direction_input(struct gpio_chip *chip, unsigned offset)
@@ -113,7 +118,7 @@ static int owl_gpio_get(struct gpio_chip *chip, unsigned offset)
 	return _gpiochip_get_bit(chip, GPIO_DAT, offset);
 }
 
-static struct gpio_chip owl_gpio_chip = {
+static const struct gpio_chip owl_gpio_chip = {
 	.label			= "owl-gpio",
 	.request		= owl_gpio_request,
 	.free			= owl_gpio_free,
@@ -166,7 +171,11 @@ static int owl_gpio_probe(struct platform_device *pdev)
 		return PTR_ERR(priv->membase);
 	}
 
-	ret = devm_gpiochip_add_data(dev, &owl_gpio_chip, priv);
+	memcpy(&priv->gpiochip, &owl_gpio_chip, sizeof(struct gpio_chip));
+	of_property_read_u32(dev->of_node, "base", &priv->gpiochip.base);
+	priv->gpiochip.parent = dev;
+
+	ret = devm_gpiochip_add_data(dev, &priv->gpiochip, priv);
 	if (ret < 0) {
 		dev_err(dev, "Failed to add gpiochip\n");
 		return ret;

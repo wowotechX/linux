@@ -68,6 +68,7 @@ static const struct pinctrl_pin_desc s900_pins[] = {
 	PINCTRL_PIN(15, "B6"),
 	PINCTRL_PIN(24, "C5"),
 	PINCTRL_PIN(37, "D8"),
+	PINCTRL_PIN(52, "F3"),
 	PINCTRL_PIN(60, "G1"),
 	PINCTRL_PIN(61, "G2"),
 };
@@ -308,10 +309,32 @@ static int s900_set_mux(struct pinctrl_dev *pctldev, unsigned selector,
 	return 0;
 }
 
+static int s900_gpio_request_enable(struct pinctrl_dev *pctldev,
+				   struct pinctrl_gpio_range *range,
+				   unsigned offset)
+{
+	dev_dbg(pctldev->dev, "%s, range(%d/%d/%d), offset %d\n", __func__,
+		range->base, range->pin_base, range->npins, offset);
+
+	return 0;
+}
+
+static void s900_gpio_disable_free(struct pinctrl_dev *pctldev,
+				   struct pinctrl_gpio_range *range,
+				   unsigned offset)
+{
+	dev_dbg(pctldev->dev, "%s, range(%d/%d/%d), offset %d\n", __func__,
+		range->base, range->pin_base, range->npins, offset);
+
+	return;
+}
+
 static struct pinmux_ops s900_pmxops = {
 	.get_functions_count = s900_get_functions_count,
 	.get_function_name = s900_get_fname,
 	.get_function_groups = s900_get_groups,
+	.gpio_request_enable = s900_gpio_request_enable,
+	.gpio_disable_free = s900_gpio_disable_free,
 	.set_mux = s900_set_mux,
 	.strict = true,
 };

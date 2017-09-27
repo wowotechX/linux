@@ -39,7 +39,7 @@
 		clock-frequency = <24000000>;
 	};
 
-	pinctrl@0xe01b0000 {
+	pinctrl1: pinctrl@0xe01b0000 {
 		compatible = "actions,s900-pinctrl";
 		reg = <0 0xe01b0000 0 0x550>;
 
@@ -56,6 +56,7 @@
 		compatible = "actions,s900-gpio";
 		reg = <0 0xe01b0000 0 12>;
 		base = <0>;
+		gpio-ranges = <&pinctrl1 19 52 1>;
 	};
 	gpiob: gpio@0xe01b000c {
 		compatible = "actions,s900-gpio";

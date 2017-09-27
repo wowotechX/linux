@@ -67,8 +67,7 @@ static inline int _gpiochip_get_bit(struct gpio_chip *chip,
 
 static int owl_gpio_request(struct gpio_chip *chip, unsigned offset)
 {
-	//return pinctrl_request_gpio(offset);
-	return 0;
+	return pinctrl_request_gpio(offset);
 }
 
 static void owl_gpio_free(struct gpio_chip *chip, unsigned offset)
@@ -76,8 +75,7 @@ static void owl_gpio_free(struct gpio_chip *chip, unsigned offset)
 	_gpiochip_clear_bit(chip, GPIO_INEN, offset);
 	_gpiochip_clear_bit(chip, GPIO_OUTEN, offset);
 
-	//return pinctrl_free_gpio(offset);
-	return 0;
+	return pinctrl_free_gpio(offset);
 }
 
 static int owl_gpio_direction_input(struct gpio_chip *chip, unsigned offset)

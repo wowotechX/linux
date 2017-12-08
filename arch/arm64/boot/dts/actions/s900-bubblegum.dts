@@ -8,6 +8,8 @@
 
 #include <dt-bindings/interrupt-controller/arm-gic.h>
 
+#include "s900-clocks.dtsi"
+
 / {
 	model = "Bubblegum-96 Development Board";
 	compatible = "actions,s900-bubblegum", "actions,s900";

@@ -1,0 +1,298 @@
+/*
+ * dts file for Bubblegum-96 Development Board
+ *
+ * Copyright (C) 2016, wowotech.
+ *
+ */
+/ {
+	clk_losc: losc {
+		#clock-cells = <0>;
+		compatible = "fixed-clock";
+
+		clock-frequency = <32768>;
+	};
+
+	clk_hosc: hosc {
+		#clock-cells = <0>;
+		compatible = "fixed-clock";
+
+		clock-frequency = <24000000>;
+	};
+
+	/* a dummy 6MHz clock used for PLL clocks's step */
+	clk_d6m: dummy_6m {
+		#clock-cells = <0>;
+		compatible = "fixed-clock";
+
+		clock-frequency = <6000000>;
+	};
+
+	/* a dummy 24MHz clock used for PLL clocks's step */
+	clk_d24m: dummy_24m {
+		compatible = "fixed-clock";
+		#clock-cells = <0>;
+		clock-frequency = <24000000>;
+	};
+
+	clk_dev_pll: dev_pll {
+		#clock-cells = <0>;
+		compatible = "actions,com-clock";
+
+		clocks = <&clk_d6m>;
+
+		actions,gate-reg = <0xe0160004>;
+		actions,gate-bit-idx = <8>;
+
+		actions,mul-reg = <0xe0160004>;
+		actions,mul-shift = <0>;
+		actions,mul-width = <8>;
+	};
+
+	clk_core_pll: core_pll {
+		#clock-cells = <0>;
+		compatible = "actions,com-clock";
+
+		clocks = <&clk_d24m>;
+
+		actions,gate-reg = <0xe0160000>;
+		actions,gate-bit-idx = <9>;
+
+		actions,mul-reg = <0xe0160000>;
+		actions,mul-shift = <0>;
+		actions,mul-width = <8>;
+	};
+
+	clk_nand_pll: nand_pll {
+		#clock-cells = <0>;
+		compatible = "actions,com-clock";
+
+		clocks = <&clk_d6m>;
+
+		actions,gate-reg = <0xe016000c>;
+		actions,gate-bit-idx = <9>;
+
+		actions,mul-reg = <0xe016000c>;
+		actions,mul-shift = <0>;
+		actions,mul-width = <8>;
+	};
+
+	clk_dev: clk_dev {
+		#clock-cells = <0>;
+		compatible = "actions,com-clock";
+
+		clocks = <&clk_hosc>, <&clk_dev_pll>;
+
+		actions,mux-reg = <0xe0160004>;
+		actions,mux-shift = <12>;
+		actions,mux-mask = <0x1>;
+	};
+
+	clk_cpu: clk_cpu {
+		#clock-cells = <0>;
+		compatible = "actions,com-clock";
+
+		clocks = <&clk_losc>, <&clk_hosc>, <&clk_core_pll>, <&clk_dev>;
+
+		actions,mux-reg = <0xe016001c>;
+		actions,mux-shift = <0>;
+		actions,mux-width = <0x3>;
+	};
+
+	clk_uart0: clk_uart0 {
+		#clock-cells = <0>;
+		compatible = "actions,com-clock";
+
+		clocks = <&clk_hosc>, <&clk_dev_pll>;
+
+		actions,mux-reg = <0xe016005c>;
+		actions,mux-shift = <16>;
+		actions,mux-width = <1>;
+
+		actions,div-reg = <0xe016005c>;
+		actions,div-shift = <0>;
+		actions,div-width = <9>;
+
+		actions,gate-reg = <0xe01600a4>;
+		actions,gate-bit-idx = <6>;
+	};
+
+	clk_uart1: clk_uart1 {
+		#clock-cells = <0>;
+		compatible = "actions,com-clock";
+
+		clocks = <&clk_hosc>, <&clk_dev_pll>;
+
+		actions,mux-reg = <0xe0160060>;
+		actions,mux-shift = <16>;
+		actions,mux-mask = <0x1>;
+
+		actions,div-reg = <0xe0160060>;
+		actions,div-shift = <0>;
+		actions,div-width = <9>;
+
+		actions,gate-reg = <0xe01600a4>;
+		actions,gate-bit-idx = <7>;
+	};
+
+	clk_uart2: clk_uart2 {
+		#clock-cells = <0>;
+		compatible = "actions,com-clock";
+
+		clocks = <&clk_hosc>, <&clk_dev_pll>;
+
+		actions,mux-reg = <0xe0160064>;
+		actions,mux-shift = <16>;
+		actions,mux-mask = <0x1>;
+
+		actions,div-reg = <0xe0160064>;
+		actions,div-shift = <0>;
+		actions,div-width = <9>;
+
+		actions,gate-reg = <0xe01600a4>;
+		actions,gate-bit-idx = <8>;
+	};
+
+	clk_uart3: clk_uart3 {
+		#clock-cells = <0>;
+		compatible = "actions,com-clock";
+
+		clocks = <&clk_hosc>, <&clk_dev_pll>;
+
+		actions,mux-reg = <0xe01600b0>;
+		actions,mux-shift = <16>;
+		actions,mux-mask = <0x1>;
+
+		actions,div-reg = <0xe01600b0>;
+		actions,div-shift = <0>;
+		actions,div-width = <9>;
+
+		actions,gate-reg = <0xe01600a4>;
+		actions,gate-bit-idx = <19>;
+	};
+
+	clk_uart4: clk_uart4 {
+		#clock-cells = <0>;
+		compatible = "actions,com-clock";
+
+		clocks = <&clk_hosc>, <&clk_dev_pll>;
+
+		actions,mux-reg = <0xe01600b4>;
+		actions,mux-shift = <16>;
+		actions,mux-mask = <0x1>;
+
+		actions,div-reg = <0xe01600b4>;
+		actions,div-shift = <0>;
+		actions,div-width = <9>;
+
+		actions,gate-reg = <0xe01600a4>;
+		actions,gate-bit-idx = <20>;
+	};
+
+	clk_uart5: clk_uart5 {
+		#clock-cells = <0>;
+		compatible = "actions,com-clock";
+
+		clocks = <&clk_hosc>, <&clk_dev_pll>;
+
+		actions,mux-reg = <0xe01600b8>;
+		actions,mux-shift = <16>;
+		actions,mux-mask = <0x1>;
+
+		actions,div-reg = <0xe01600b8>;
+		actions,div-shift = <0>;
+		actions,div-width = <9>;
+
+		actions,gate-reg = <0xe01600a4>;
+		actions,gate-bit-idx = <21>;
+	};
+
+	clk_uart6: clk_uart6 {
+		#clock-cells = <0>;
+		compatible = "actions,com-clock";
+
+		clocks = <&clk_hosc>, <&clk_dev_pll>;
+
+		actions,mux-reg = <0xe01600bc>;
+		actions,mux-shift = <16>;
+		actions,mux-mask = <0x1>;
+
+		actions,div-reg = <0xe01600bc>;
+		actions,div-shift = <0>;
+		actions,div-width = <9>;
+
+		actions,gate-reg = <0xe01600a4>;
+		actions,gate-bit-idx = <18>;
+	};
+
+	clk_sd0: clk_sd0 {
+		#clock-cells = <0>;
+		compatible = "actions,com-clock";
+
+		clocks = <&clk_dev>, <&clk_nand_pll>;
+
+		actions,mux-reg = <0xe0160050>;
+		actions,mux-shift = <9>;
+		actions,mux-mask = <0x1>;
+
+		actions,div-reg = <0xe0160050>;
+		actions,div-shift = <0>;
+		actions,div-width = <5>;
+
+		actions,gate-reg = <0xe01600a0>;
+		actions,gate-bit-idx = <5>;
+	};
+
+	clk_sd1: clk_sd1 {
+		#clock-cells = <0>;
+		compatible = "actions,com-clock";
+
+		clocks = <&clk_dev>, <&clk_nand_pll>;
+
+		actions,mux-reg = <0xe0160054>;
+		actions,mux-shift = <9>;
+		actions,mux-mask = <0x1>;
+
+		actions,div-reg = <0xe0160054>;
+		actions,div-shift = <0>;
+		actions,div-width = <5>;
+
+		actions,gate-reg = <0xe01600a0>;
+		actions,gate-bit-idx = <6>;
+	};
+
+	clk_sd2: clk_sd2 {
+		#clock-cells = <0>;
+		compatible = "actions,com-clock";
+
+		clocks = <&clk_dev>, <&clk_nand_pll>;
+
+		actions,mux-reg = <0xe0160058>;
+		actions,mux-shift = <9>;
+		actions,mux-mask = <0x1>;
+
+		actions,div-reg = <0xe0160058>;
+		actions,div-shift = <0>;
+		actions,div-width = <5>;
+
+		actions,gate-reg = <0xe01600a0>;
+		actions,gate-bit-idx = <7>;
+	};
+
+	clk_sd3: clk_sd3 {
+		#clock-cells = <0>;
+		compatible = "actions,com-clock";
+
+		clocks = <&clk_dev>, <&clk_nand_pll>;
+
+		actions,mux-reg = <0xe01600c4>;
+		actions,mux-shift = <9>;
+		actions,mux-mask = <0x1>;
+
+		actions,div-reg = <0xe01600c4>;
+		actions,div-shift = <0>;
+		actions,div-width = <5>;
+
+		actions,gate-reg = <0xe01600a0>;
+		actions,gate-bit-idx = <16>;
+	};
+};

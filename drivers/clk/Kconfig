@@ -197,6 +197,11 @@ config COMMON_CLK_PXA
 	---help---
 	  Support for the Marvell PXA SoC.
 
+config COMMON_CLK_OWL
+	def_bool COMMON_CLK && ARCH_OWL
+	---help---
+	  Support for the Actions Owl SoC.
+
 source "drivers/clk/bcm/Kconfig"
 source "drivers/clk/hisilicon/Kconfig"
 source "drivers/clk/mvebu/Kconfig"
